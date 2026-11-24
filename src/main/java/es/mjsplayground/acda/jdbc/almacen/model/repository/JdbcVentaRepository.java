@@ -2,6 +2,7 @@ package es.mjsplayground.acda.jdbc.almacen.model.repository;
 
 import es.mjsplayground.acda.jdbc.almacen.model.entity.Venta;
 import java.sql.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class JdbcVentaRepository {
@@ -16,8 +17,37 @@ public class JdbcVentaRepository {
 
   public void registrar(Connection c, long producto, int cantidad, long total) throws SQLException {
     // TODO 4: registrar la venta usando la conexión recibida
-    throw new UnsupportedOperationException(
-        "Etapa pendiente: 4: registrar la venta usando la conexión recibida");
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    String fecha = java.time.LocalDateTime.now().format(formatter);
+
+    if (existenPara(c, producto)) {
+      String sql = "UPDATE venta SET cantidad = cantidad + ?, total = total + ?, fecha = ? WHERE producto_id = ?";
+      try (PreparedStatement p = c.prepareStatement(sql)) {
+        p.setInt(1, cantidad);
+        p.setLong(2, total);
+        p.setString(3, fecha);
+        p.setLong(4, producto);
+        int actualizados = p.executeUpdate();
+        if (actualizados == 0) {
+          throw new SQLException("No se pudo actualizar la venta para el producto con ID: " + producto);
+        }
+      }
+    } else {
+      String sql = "INSERT INTO venta (producto_id, cantidad, total, fecha) VALUES (?, ?, ?, ?)";
+      try (PreparedStatement p = c.prepareStatement(sql)) {
+        p.setLong(1, producto);
+        p.setInt(2, cantidad);
+        p.setLong(3, total);
+        p.setString(4, fecha);
+        int insertados = p.executeUpdate();
+        if (insertados == 0) {
+          throw new SQLException("No se pudo registrar la venta para el producto con ID: " + producto);
+        }
+      }
+    }
+
+    //throw new UnsupportedOperationException("Etapa pendiente: 4: registrar la venta usando la conexión recibida");
+
   }
 
   public List<Venta> listar(Connection c) throws SQLException {
